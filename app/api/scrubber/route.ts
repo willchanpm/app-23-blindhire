@@ -2,9 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Candidate } from '../../types/candidate';
 import { OpenAI } from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Lazy initialization: only create the client when the API route is called
+// This prevents build-time errors when OPENAI_API_KEY is not set
+function getOpenAI(): OpenAI {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY environment variable is not set');
+  }
+  return new OpenAI({ apiKey });
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -75,6 +81,7 @@ async function scrubWithGPT(text: string): Promise<string> {
 Here is the text to process:
 ${text}`;
 
+  const openai = getOpenAI();
   const response = await openai.chat.completions.create({
     model: "gpt-4",
     messages: [

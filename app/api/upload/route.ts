@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { OpenAI } from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Lazy initialization: only create the client when the API route is called
+// This prevents build-time errors when OPENAI_API_KEY is not set
+function getOpenAI(): OpenAI {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY environment variable is not set');
+  }
+  return new OpenAI({ apiKey });
+}
 
 type MessageCreateParams = {
   role: 'user';
@@ -28,6 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Upload the file
+    const openai = getOpenAI();
     const uploadedFile = await openai.files.create({
       file: file,
       purpose: 'assistants',
